@@ -12,9 +12,12 @@
   "type": "commonjs",
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
+    "axios": "^1.14.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
-    "socket.io": "^4.8.3"
+    "react-router-dom": "^7.14.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   }
 }
