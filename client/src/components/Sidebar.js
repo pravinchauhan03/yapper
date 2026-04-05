@@ -4,12 +4,14 @@ import { useSocket } from '../context/SocketContext';
 import axios from 'axios';
 import SearchUsers from './SearchUsers';
 import FriendsList from './FriendsList';
+import { useNavigate } from 'react-router-dom';
 
 const Sidebar = ({ onSelectConversation, selectedConversation }) => {
   const { user, signOut, getToken } = useAuth();
   const { onlineUsers } = useSocket();
   const [conversations, setConversations] = useState([]);
   const [activeTab, setActiveTab] = useState('chats');
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchConversations();
@@ -37,7 +39,10 @@ const Sidebar = ({ onSelectConversation, selectedConversation }) => {
       {/* Header */}
       <div style={styles.header}>
         <h2 style={styles.logo}>Yapper 💬</h2>
-        <button style={styles.signOutBtn} onClick={signOut}>Sign out</button>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button style={styles.profileBtn} onClick={() => navigate('/profile')}>👤</button>
+          <button style={styles.signOutBtn} onClick={signOut}>Sign out</button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -114,6 +119,14 @@ const styles = {
     fontWeight: 'bold',
     color: '#6c63ff',
     margin: 0,
+  },
+  profileBtn: {
+    padding: '6px 10px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: '#f0f2f5',
+    cursor: 'pointer',
+    fontSize: '16px',
   },
   signOutBtn: {
     padding: '6px 12px',
