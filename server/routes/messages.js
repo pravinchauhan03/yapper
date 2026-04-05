@@ -28,16 +28,15 @@ router.get('/:conversationId', async (req, res) => {
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   const { conversationId } = req.params;
 
-  // Verify user is part of this conversation
-  const { data: conversation, error: convError } = await supabase
+  // Check user is part of conversation
+  const { data: convo, error: convoError } = await supabase
     .from('conversations')
     .select('*')
     .eq('id', conversationId)
     .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
     .single();
-  if (convError) return res.status(403).json({ error: 'Access denied' });
+  if (convoError) return res.status(403).json({ error: 'Access denied' });
 
-  // Get messages
   const { data, error } = await supabase
     .from('messages')
     .select('*, sender:sender_id(username, avatar_url)')
@@ -54,16 +53,15 @@ router.post('/:conversationId', async (req, res) => {
   const { conversationId } = req.params;
   const { content } = req.body;
 
-  // Verify user is part of this conversation
-  const { data: conversation, error: convError } = await supabase
+  // Check user is part of conversation
+  const { data: convo, error: convoError } = await supabase
     .from('conversations')
     .select('*')
     .eq('id', conversationId)
     .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
     .single();
-  if (convError) return res.status(403).json({ error: 'Access denied' });
+  if (convoError) return res.status(403).json({ error: 'Access denied' });
 
-  // Insert message
   const { data, error } = await supabase
     .from('messages')
     .insert({ conversation_id: conversationId, sender_id: user.id, content })
