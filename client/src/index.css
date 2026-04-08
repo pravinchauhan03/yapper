@@ -17,3 +17,86 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* Animated message bubbles */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.message-bubble {
+  animation: popIn 0.25s ease forwards;
+}
+
+.message-bubble-left {
+  animation: fadeSlideIn 0.25s ease forwards;
+  transform-origin: left center;
+}
+
+.message-bubble-right {
+  animation: fadeSlideIn 0.25s ease forwards;
+  transform-origin: right center;
+}
+
+/* Typing indicator dots */
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #aaa;
+  display: inline-block;
+  margin: 0 2px;
+}
+
+.typing-dot:nth-child(1) { animation: bounce 1.2s infinite 0s; }
+.typing-dot:nth-child(2) { animation: bounce 1.2s infinite 0.2s; }
+.typing-dot:nth-child(3) { animation: bounce 1.2s infinite 0.4s; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

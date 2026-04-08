@@ -71,4 +71,36 @@ router.post('/:conversationId', async (req, res) => {
   res.status(200).json({ message: 'Message sent!', data });
 });
 
+// Mark messages as read
+router.put('/:conversationId/read', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { conversationId } = req.params;
+  const { error } = await supabase
+    .from('messages')
+    .update({ is_read: true })
+    .eq('conversation_id', conversationId)
+    .neq('sender_id', user.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.status(200).json({ message: 'Messages marked as read' });
+});
+
+// Get unread count for all conversations
+router.get('/unread/counts', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { data, error } = await supabase
+    .from('messages')
+    .select('conversation_id')
+    .eq('is_read', false)
+    .neq('sender_id', user.id);
+  if (error) return res.status(400).json({ error: error.message });
+
+  const counts = {};
+  data.forEach(msg => {
+    counts[msg.conversation_id] = (counts[msg.conversation_id] || 0) + 1;
+  });
+  res.status(200).json(counts);
+});
+
 module.exports = router;
