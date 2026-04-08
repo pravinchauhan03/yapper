@@ -103,4 +103,18 @@ router.get('/unread/counts', async (req, res) => {
   res.status(200).json(counts);
 });
 
+// Mark messages as read
+router.put('/:conversationId/read', async (req, res) => {
+  const user = await getUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { conversationId } = req.params;
+  const { error } = await supabase
+    .from('messages')
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq('conversation_id', conversationId)
+    .neq('sender_id', user.id);
+  if (error) return res.status(400).json({ error: error.message });
+  res.status(200).json({ message: 'Messages marked as read' });
+});
+
 module.exports = router;

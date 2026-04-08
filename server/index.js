@@ -61,6 +61,11 @@ io.on('connection', (socket) => {
     socket.to(conversationId).emit('user_stop_typing');
   });
 
+  // Read receipt
+  socket.on('messages_read', ({ conversationId, userId }) => {
+    io.to(conversationId).emit('messages_read', { conversationId, userId });
+  });
+
   // User disconnects
   socket.on('disconnect', () => {
     onlineUsers.forEach((socketId, userId) => {

@@ -6,6 +6,7 @@ import axios from 'axios';
 import { MessageSkeleton } from './Skeleton';
 
 const ChatWindow = ({ conversation }) => {
+  const [readBy, setReadBy] = useState(null);
   const { user, getToken } = useAuth();
   const { socket } = useSocket();
   const { darkMode } = useTheme();
@@ -32,11 +33,17 @@ const ChatWindow = ({ conversation }) => {
         setIsTyping(false);
         setTypingUser('');
       });
+      socket?.on('messages_read', ({ conversationId, userId }) => {
+        if (conversationId === conversation?.id) {
+          setReadBy(userId);
+        }
+      });
     }
     return () => {
       socket?.off('receive_message');
       socket?.off('user_typing');
       socket?.off('user_stop_typing');
+      socket?.off('messages_read');
     };
   }, [conversation, socket]);
 
@@ -45,20 +52,31 @@ const ChatWindow = ({ conversation }) => {
   }, [messages]);
 
   const fetchMessages = async () => {
-  setLoadingMessages(true);
-  try {
-    const token = await getToken();
-    const res = await axios.get(
-      `${process.env.REACT_APP_API_URL}/api/messages/${conversation.id}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setMessages(res.data);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoadingMessages(false);
-  }
-};
+    setLoadingMessages(true);
+    try {
+      const token = await getToken();
+      const res = await axios.get(
+        `${process.env.REACT_APP_API_URL}/api/messages/${conversation.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessages(res.data);
+
+      // Mark as read and emit socket event
+      await axios.put(
+        `${process.env.REACT_APP_API_URL}/api/messages/${conversation.id}/read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      socket?.emit('messages_read', {
+        conversationId: conversation.id,
+        userId: user.id,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -152,63 +170,82 @@ const ChatWindow = ({ conversation }) => {
       </div>
 
       {/* Messages */}
-     <div style={{
-  flex: 1,
-  overflowY: 'auto',
-  padding: '16px',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '8px',
-}}>
-  {loadingMessages ? (
-    <>
-      <MessageSkeleton align="left" />
-      <MessageSkeleton align="right" />
-      <MessageSkeleton align="left" />
-      <MessageSkeleton align="right" />
-      <MessageSkeleton align="left" />
-    </>
-  ) : (
-    <>
-      {messages.map((msg, index) => (
-        <div
-          key={index}
-          className={msg.sender_id === user.id ? 'message-bubble-right' : 'message-bubble-left'}
-          style={{
-            padding: '10px 16px',
-            borderRadius: '16px',
-            maxWidth: '60%',
-            fontSize: '15px',
-            lineHeight: '1.4',
-            alignSelf: msg.sender_id === user.id ? 'flex-end' : 'flex-start',
-            backgroundColor: msg.sender_id === user.id ? '#6c63ff' : darkMode ? '#16213e' : '#fff',
-            color: msg.sender_id === user.id ? '#fff' : darkMode ? '#fff' : '#333',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-          }}
-        >
-          {msg.content}
-        </div>
-      ))}
-      {isTyping && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '8px 16px',
-          backgroundColor: darkMode ? '#16213e' : '#fff',
-          borderRadius: '16px',
-          alignSelf: 'flex-start',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-        }}>
-          <span className="typing-dot" />
-          <span className="typing-dot" />
-          <span className="typing-dot" />
-        </div>
-      )}
-      <div ref={messagesEndRef} />
-    </>
-  )}
-</div>
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}>
+        {loadingMessages ? (
+          <>
+            <MessageSkeleton align="left" />
+            <MessageSkeleton align="right" />
+            <MessageSkeleton align="left" />
+            <MessageSkeleton align="right" />
+            <MessageSkeleton align="left" />
+          </>
+        ) : (
+          <>
+            {messages.map((msg, index) => {
+              const isLast = index === messages.length - 1;
+              const isMine = msg.sender_id === user.id;
+              return (
+                <div key={index} style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: isMine ? 'flex-end' : 'flex-start',
+                }}>
+                  <div
+                    className={isMine ? 'message-bubble-right' : 'message-bubble-left'}
+                    style={{
+                      padding: '10px 16px',
+                      borderRadius: '16px',
+                      maxWidth: '60%',
+                      fontSize: '15px',
+                      lineHeight: '1.4',
+                      backgroundColor: isMine ? '#6c63ff' : darkMode ? '#16213e' : '#fff',
+                      color: isMine ? '#fff' : darkMode ? '#fff' : '#333',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+                  {isMine && isLast && (
+                    <span style={{
+                      fontSize: '11px',
+                      color: msg.is_read || readBy ? '#6c63ff' : '#aaa',
+                      marginTop: '2px',
+                      marginRight: '4px',
+                    }}>
+                      {msg.is_read || readBy ? '✓✓ Seen' : '✓ Sent'}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {isTyping && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '8px 16px',
+                backgroundColor: darkMode ? '#16213e' : '#fff',
+                borderRadius: '16px',
+                alignSelf: 'flex-start',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+              }}>
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+                <span className="typing-dot" />
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+
       {/* Input */}
       <div style={{
         display: 'flex',
